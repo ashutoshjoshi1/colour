@@ -18,6 +18,7 @@ numpy-fastest-way-of-computing-diagonal-for-each-row-of-a-2d-array/\
 
 from __future__ import annotations
 
+import ast
 import functools
 import re
 import sys
@@ -1293,10 +1294,12 @@ def get_domain_range_scale_metadata(function: Callable) -> dict[str, Any]:
                 and (match := re.search(r"Annotated\[[^,]+,\s*([^\]]+)\]", hint))
             ):
                 scale_string = match.group(1).strip()
-                # Evaluate scale (could be int, tuple, etc.)
+                # Evaluate scale (could be int, tuple, etc.). Only Python
+                # literals are expected here, so `ast.literal_eval` is used
+                # instead of `eval` to avoid arbitrary code execution.
                 try:
-                    scale = eval(scale_string)  # noqa: S307
-                except (SyntaxError, NameError, ValueError):
+                    scale = ast.literal_eval(scale_string)
+                except (SyntaxError, TypeError, ValueError):
                     scale = scale_string
 
             if scale is not None:
