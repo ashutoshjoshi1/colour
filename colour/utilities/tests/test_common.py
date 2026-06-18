@@ -714,3 +714,29 @@ class TestDownloadUrl:
             )
         finally:
             shutil.rmtree(os.path.dirname(target))
+
+    def test_download_url_raise_exception_invalid_scheme(self) -> None:
+        """
+        Test :func:`colour.utilities.common.download_url` definition raised
+        exception for unsupported, potentially unsafe URL schemes.
+        """
+
+        for url in (
+            "file:///etc/passwd",
+            "ftp://example.com/resource",
+            "data:text/plain;base64,SGVsbG8=",
+        ):
+            pytest.raises(ValueError, download_url, url)
+
+    def test_download_url_raise_exception_path_traversal(self) -> None:
+        """
+        Test :func:`colour.utilities.common.download_url` definition raised
+        exception for a URL whose path would escape the *Colour* cache
+        directory.
+        """
+
+        pytest.raises(
+            ValueError,
+            download_url,
+            "https://huggingface.co/../../../../../../colour-traversal",
+        )

@@ -1194,6 +1194,15 @@ def download_url(
         Absolute path to the cached file.
     """
 
+    scheme = urlparse(url).scheme.lower()
+    if scheme not in ("http", "https"):
+        error = (
+            f'Refusing to download "{url}": only the "http" and "https" URL '
+            f'schemes are supported, not "{scheme}"!'
+        )
+
+        raise ValueError(error)
+
     if filename is not None:
         local_path = filename
     else:
@@ -1216,6 +1225,20 @@ def download_url(
             relative = f"{parts[0]}/{parts[1]}"
 
         local_path = os.path.join(root, relative)
+
+        # Guard against path traversal: a crafted ``url`` containing ``..``
+        # segments must not be able to escape the *Colour* cache directory.
+        root_resolved = os.path.realpath(root)
+        if (resolved := os.path.realpath(local_path)) != root_resolved and (
+            not resolved.startswith(root_resolved + os.sep)
+        ):
+            error = (
+                f'Refusing to download "{url}": the resolved path '
+                f'"{resolved}" is outside the "Colour" cache directory '
+                f'"{root_resolved}"!'
+            )
+
+            raise ValueError(error)
 
     if os.path.isfile(local_path):
         if sha256 is not None and hash_sha256(local_path) != sha256.lower():
